@@ -1,0 +1,51 @@
+name: APK Derle
+
+# Bu workflow, kod her "main" dalına gönderildiğinde (push) veya
+# manuel olarak GitHub Actions sekmesinden tetiklendiğinde otomatik
+# olarak Flutter uygulamasını derleyip APK üretir.
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}   # "Run workflow" butonuyla elle de tetiklenebilir
+
+# GÜVENLİK: GITHUB_TOKEN'a varsayılan (bazı organizasyonlarda geniş)
+# yetkiler yerine yalnızca gerçekten ihtiyaç duyulan minimum yetkiyi
+# tanımlıyoruz. Bu workflow sadece kodu okuyor ve bir artifact
+# yüklüyor - depoya yazma, issue açma gibi hiçbir yetkiye ihtiyacı yok.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Android APK Derle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Kodları çek
+        uses: actions/checkout@v4
+
+      - name: Java kur (Android derlemesi için gerekli)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Flutter SDK kur
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+
+      - name: Bağımlılıkları indir
+        run: flutter pub get
+
+      - name: APK derle (release)
+        run: flutter build apk --release
+
+      - name: APK'yı yükle (indirilebilir Artifact olarak)
+        uses: actions/upload-artifact@v4
+        with:
+          name: scooter-bul-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
